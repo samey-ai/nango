@@ -5,7 +5,6 @@ import { zodErrorToHTTP } from '@nangohq/utils';
 
 import { connectionSimpleToPublicApi } from '../../formatters/connection.js';
 import { asyncWrapper } from '../../utils/asyncWrapper.js';
-import { bodySchema } from '../connect/postSessions.js';
 
 import type { GetPublicConnections } from '@nangohq/types';
 
@@ -13,8 +12,9 @@ const validationQuery = z
     .object({
         connectionId: z.string().min(1).max(255).optional(),
         search: z.string().min(1).max(255).optional(),
-        endUserId: bodySchema.shape.end_user.shape.id.optional(),
-        endUserOrganizationId: bodySchema.shape.end_user.shape.id.optional()
+        endUserId: z.string().min(1).max(255).optional(),
+        endUserOrganizationId: z.string().min(1).max(255).optional(),
+        metadata: z.string().min(1).max(255).optional()
     })
     .strict();
 
@@ -30,12 +30,26 @@ export const getPublicConnections = asyncWrapper<GetPublicConnections>(async (re
     const { environment } = res.locals;
     const queryParam: GetPublicConnections['Querystring'] = queryParamValues.data;
 
+    // try to convert metadata to a record if it's a valid JSON string else {}
+    let metadata_obj: Record<string, string> | null = null;
+    if (queryParam.metadata) {
+        try {
+            metadata_obj = JSON.parse(queryParam.metadata);
+        } catch {
+            res.status(400).send({
+                error: { code: 'invalid_query_params', message: 'Metadata must be a valid JSON string' }
+            });
+            metadata_obj = {};
+        }
+    }
+
     const connections = await connectionService.listConnections({
         environmentId: environment.id,
         connectionId: queryParam.connectionId,
         search: queryParam.search,
         endUserId: queryParam.endUserId,
         endUserOrganizationId: queryParam.endUserOrganizationId,
+        metadata: metadata_obj ?? {},
         limit: 10000
     });
 
