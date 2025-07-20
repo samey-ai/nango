@@ -723,6 +723,7 @@ class ConnectionService {
         search,
         endUserId,
         endUserOrganizationId,
+        metadata,
         limit = 1000,
         page = 0
     }: {
@@ -733,6 +734,7 @@ class ConnectionService {
         search?: string | undefined;
         endUserId?: string | undefined;
         endUserOrganizationId?: string | undefined;
+        metadata?: Record<string, unknown> | undefined;
         limit?: number;
         page?: number | undefined;
     }): Promise<{ connection: DBConnectionAsJSONRow; end_user: DBEndUser | null; active_logs: [{ type: string; log_id: string }]; provider: string }[]> {
@@ -787,6 +789,13 @@ class ConnectionService {
         }
         if (endUserOrganizationId) {
             query.where('end_users.organization_id', endUserOrganizationId);
+        }
+
+        // Filter by metadata if present and has more than 1 key
+        if (metadata && Object.keys(metadata).length > 0) {
+            Object.entries(metadata).forEach(([key, value]) => {
+                query.whereRaw(`_nango_connections.metadata->>? = ?`, [key, value]);
+            });
         }
 
         if (withError === false) {
