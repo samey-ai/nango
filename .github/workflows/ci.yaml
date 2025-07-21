@@ -1,0 +1,61 @@
+name: 'Build and push Docker image'
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: write
+
+jobs:
+  build-image:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Get tags
+        id: get_tags
+        run: |
+          VERSION=$(git describe --tags --dirty --always)
+          echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get Azure Container Registry Token
+        id: get_token
+        run: |
+          TOKEN=$(az acr login --name $ACR_NAME --expose-token --query accessToken --output tsv)
+          echo "TOKEN=${TOKEN}" >> $GITHUB_OUTPUT
+        env:
+          ACR_NAME: ${{ vars.ACR_NAME }}
+
+      - name: Docker login
+        uses: docker/login-action@v3
+        with:
+          username: 00000000-0000-0000-0000-000000000000
+          password: ${{ steps.get_token.outputs.TOKEN }}
+          registry: ${{ vars.ACR_NAME }}.azurecr.io
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: |
+            ${{ vars.ACR_NAME }}.azurecr.io/nango:latest
+            ${{ vars.ACR_NAME }}.azurecr.io/nango:${{ steps.get_tags.outputs.VERSION }}
+          platforms: linux/amd64
+          cache-from: type=registry,ref=${{ vars.ACR_NAME }}.azurecr.io/nango:buildcache
+          cache-to: type=registry,ref=${{ vars.ACR_NAME }}.azurecr.io/nango:buildcache,mode=max
