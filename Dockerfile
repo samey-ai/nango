@@ -77,6 +77,12 @@ RUN true \
 RUN true \
   && npm prune --omit=dev --omit=peer --omit=optional
 
+# Self hosted
+RUN true \
+  && rm -rf packages/jobs \
+  && rm -rf packages/runner \
+  && rm -rf packages/persist
+
 # ---- Web ----
 # Resulting new, minimal image
 FROM node:22.17.1-bookworm-slim AS web
@@ -110,3 +116,7 @@ ENV GIT_HASH=$git_hash
 ENV SERVER_RUN_MODE=DOCKERIZED
 
 EXPOSE 8080
+
+ENV SERVER_RUN_MODE=DOCKERIZED
+
+CMD ["packages/server/entrypoint.sh"]
