@@ -56,6 +56,6 @@ jobs:
           tags: |
             ${{ vars.ACR_NAME }}.azurecr.io/nango:latest
             ${{ vars.ACR_NAME }}.azurecr.io/nango:${{ steps.get_tags.outputs.VERSION }}
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           cache-from: type=registry,ref=${{ vars.ACR_NAME }}.azurecr.io/nango:buildcache
           cache-to: type=registry,ref=${{ vars.ACR_NAME }}.azurecr.io/nango:buildcache,mode=max
