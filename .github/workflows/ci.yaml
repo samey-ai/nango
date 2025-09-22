@@ -24,6 +24,7 @@ jobs:
       VERSION: ${{ steps.get_tags.outputs.VERSION }}
       TOKEN: ${{ steps.get_token.outputs.TOKEN }}
 
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -90,3 +91,4 @@ jobs:
             -t ${{ vars.ACR_NAME }}.azurecr.io/nango:latest \
             ${{ vars.ACR_NAME }}.azurecr.io/nango:${{ needs.build-image.outputs.VERSION }}-amd64 \
             ${{ vars.ACR_NAME }}.azurecr.io/nango:${{ needs.build-image.outputs.VERSION }}-arm64
+
