@@ -17,7 +17,7 @@ import { pubsub } from '../pubsub.js';
 import { getOrchestrator } from '../utils/utils.js';
 import executeVerificationScript from './connection/credentials-verification-script.js';
 import { slackService } from '../services/slack.js';
-import { postConnectionCreation } from './connection/on/connection-created.js';
+import { postConnectionCreation } from './connection/on/post-connection-creation.js';
 import postConnection from './connection/post-connection.js';
 
 import type { LogContext, LogContextGetter, LogContextStateless } from '@nangohq/logs';
@@ -347,9 +347,6 @@ export async function credentialsTest({
             provider,
             providerName: config.provider,
             providerConfigKey: config.unique_key,
-            headers: {
-                'Content-Type': 'application/json'
-            },
             decompress: false
         };
 

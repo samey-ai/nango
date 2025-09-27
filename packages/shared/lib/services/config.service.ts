@@ -2,6 +2,7 @@ import db from '@nangohq/database';
 import { isCloud, nanoid } from '@nangohq/utils';
 
 import { getProvider } from './providers.js';
+import { gettingStartedService } from '../index.js';
 import encryptionManager from '../utils/encryption.manager.js';
 import { NangoError } from '../utils/error.js';
 import syncManager from './sync/manager.service.js';
@@ -111,6 +112,39 @@ class ConfigService {
         return res[0] ?? null;
     }
 
+    async createEmptyProviderConfigWithCreds(
+        providerName: string,
+        environment_id: number,
+        provider: Provider,
+        client_id: string,
+        client_secret: string
+    ): Promise<IntegrationConfig> {
+        const exists = await db.knex
+            .count<{ count: string }>('*')
+            .from<ProviderConfig>(`_nango_configs`)
+            .where({ provider: providerName, environment_id, deleted: false })
+            .first();
+
+        const config = await this.createProviderConfig(
+            {
+                environment_id,
+                unique_key: exists?.count === '0' ? providerName : `${providerName}-${nanoid(4).toLocaleLowerCase()}`,
+                provider: providerName,
+                oauth_client_id: client_id,
+                oauth_client_secret: client_secret,
+                forward_webhooks: true,
+                shared_credentials_id: null
+            },
+            provider
+        );
+
+        if (!config) {
+            throw new NangoError('unknown_provider_config');
+        }
+
+        return config;
+    }
+
     async createEmptyProviderConfig(providerName: string, environment_id: number, provider: Provider): Promise<IntegrationConfig> {
         const exists = await db.knex
             .count<{ count: string }>('*')
@@ -156,6 +190,8 @@ class ConfigService {
 
         // TODO: might be useless since we are dropping the data after a while
         await deleteSyncConfigByConfigId(id);
+
+        await gettingStartedService.deleteMetaByIntegrationId(db.knex, id);
 
         const updated = await db.knex.from<ProviderConfig>(`_nango_configs`).where({ id, deleted: false }).update({ deleted: true, deleted_at: new Date() });
         if (updated <= 0) {

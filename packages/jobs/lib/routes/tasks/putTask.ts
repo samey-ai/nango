@@ -84,7 +84,8 @@ const validate = validateRequest<PutTask>({
                         additional_properties: z.record(z.string(), z.unknown()).optional()
                     })
                     .optional(),
-                output: jsonSchema.default(null)
+                output: jsonSchema.default(null),
+                telemetryBag: z.object({ customLogs: z.number(), proxyCalls: z.number() }).default({ customLogs: 0, proxyCalls: 0 })
             })
             .parse(data),
     parseParams: (data) => z.object({ taskId: z.string().uuid() }).strict().parse(data)
@@ -92,15 +93,15 @@ const validate = validateRequest<PutTask>({
 
 const handler = async (_req: EndpointRequest, res: EndpointResponse<PutTask>) => {
     const { taskId } = res.locals.parsedParams;
-    const { nangoProps, error, output } = res.locals.parsedBody;
+    const { nangoProps, error, output, telemetryBag } = res.locals.parsedBody;
     if (!nangoProps) {
         res.status(400).json({ error: { code: 'put_task_failed', message: 'missing nangoProps' } });
         return;
     }
     if (error) {
-        await handleError({ taskId, nangoProps, error });
+        await handleError({ taskId, nangoProps, error, telemetryBag });
     } else {
-        await handleSuccess({ taskId, nangoProps, output: output || null });
+        await handleSuccess({ taskId, nangoProps, output: output || null, telemetryBag });
     }
     res.status(204).send();
     return;

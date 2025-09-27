@@ -33,7 +33,10 @@ for (const flow of flows) {
     const integration = flow.providerConfigKey;
     const actions = flow.actions;
     const syncs = flow.syncs;
-    useCases[integration] = buildEndpoints('action', actions, integration).concat(buildEndpoints('sync', syncs, integration));
+    const symLinkTargetName = flow.symLinkTargetName;
+    useCases[integration] = buildEndpoints('action', actions, integration, symLinkTargetName).concat(
+        buildEndpoints('sync', syncs, integration, symLinkTargetName)
+    );
 }
 
 const providersHandled: string[] = [];
@@ -187,7 +190,7 @@ function useCasesSnippet(useCases: any) {
                 .join('\n')}
         </AccordionGroup>
 
-        <Tip>Not seeing the integration you need? [Build your own](https://docs.nango.dev/guides/custom-integrations/overview) independently.</Tip>
+        <Tip>Not seeing the integration you need? [Build your own](https://docs.nango.dev/guides/platform/functions) independently.</Tip>
     `
         .split('\n')
         .map((line) => line.trim())
@@ -199,7 +202,7 @@ function emptyUseCases() {
 
         _No pre-built integration yet (time to contribute: &lt;48h)_
 
-        <Tip>Not seeing the integration you need? [Build your own](https://docs.nango.dev/guides/custom-integrations/overview) independently.</Tip>
+        <Tip>Not seeing the integration you need? [Build your own](https://docs.nango.dev/guides/platform/functions) independently.</Tip>
     `
         .split('\n')
         .map((line) => line.trim())
@@ -214,7 +217,7 @@ interface Endpoint {
     script: string;
 }
 
-function buildEndpoints(type: string, syncOrAction: any, integration: string) {
+function buildEndpoints(type: string, syncOrAction: any, integration: string, symLinkTargetName: string | null) {
     const endpoints: Endpoint[] = [];
     if (syncOrAction) {
         for (const item of syncOrAction) {
@@ -230,7 +233,7 @@ function buildEndpoints(type: string, syncOrAction: any, integration: string) {
                     path: endpoint?.path,
                     description: item?.description?.trim(),
                     group: endpoint?.group,
-                    script: `${integration}/${type}s/${item.name}`
+                    script: `${symLinkTargetName || integration}/${type}s/${item.name}`
                 });
             }
         }

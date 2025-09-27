@@ -9,6 +9,8 @@ import { persistAccountUsageCron } from './crons/persistAccountUsage.js';
 import { exportUsageCron } from './crons/usage.js';
 import { envs } from './env.js';
 import { Billing } from './processors/billing.js';
+import { CustomerTracking } from './processors/customer-tracking.js';
+import { Team } from './processors/team.js';
 import { logger } from './utils.js';
 
 try {
@@ -35,6 +37,14 @@ try {
     // Billing processor
     const billingProc = new Billing(pubsubTransport);
     billingProc.start();
+
+    // Team processor
+    const teamProc = new Team(pubsubTransport);
+    teamProc.start();
+
+    // customer tracking
+    const customerTrackingProc = new CustomerTracking(pubsubTransport);
+    customerTrackingProc.start();
 
     // Crons
     exportUsageCron();
