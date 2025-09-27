@@ -64,7 +64,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
-          tags: ${{ vars.ACR_NAME }}.azurecr.io/nango:${{ steps.get_tags.outputs.VERSION }-${{ matrix.arch }}
+          tags: ${{ vars.ACR_NAME }}.azurecr.io/nango:${{ steps.get_tags.outputs.VERSION }}-${{ matrix.arch }}
           platforms: linux/${{ matrix.arch }}
           cache-from: type=registry,ref=${{ vars.ACR_NAME }}.azurecr.io/nango:buildcache-${{ matrix.arch }}
           cache-to: type=registry,ref=${{ vars.ACR_NAME }}.azurecr.io/nango:buildcache-${{ matrix.arch }},mode=max
