@@ -22,7 +22,6 @@ jobs:
     runs-on: ${{ matrix.runner }}
     outputs:
       VERSION: ${{ steps.get_tags.outputs.VERSION }}
-      TOKEN: ${{ steps.get_token.outputs.TOKEN }}
 
 
     steps:
@@ -74,11 +73,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Get Azure Container Registry Token
+        id: get_token
+        run: |
+          TOKEN=$(az acr login --name $ACR_NAME --expose-token --query accessToken --output tsv)
+          echo "TOKEN=${TOKEN}" >> $GITHUB_OUTPUT
+        env:
+          ACR_NAME: ${{ vars.ACR_NAME }}
+
       - name: Docker login
         uses: docker/login-action@v3
         with:
           username: 00000000-0000-0000-0000-000000000000
-          password: ${{ needs.build-image.outputs.TOKEN }}
+          password: ${{ steps.get_token.outputs.TOKEN }}
           registry: ${{ vars.ACR_NAME }}.azurecr.io
 
       - name: Set up Docker Buildx
@@ -91,4 +105,3 @@ jobs:
             -t ${{ vars.ACR_NAME }}.azurecr.io/nango:latest \
             ${{ vars.ACR_NAME }}.azurecr.io/nango:${{ needs.build-image.outputs.VERSION }}-amd64 \
             ${{ vars.ACR_NAME }}.azurecr.io/nango:${{ needs.build-image.outputs.VERSION }}-arm64
-
