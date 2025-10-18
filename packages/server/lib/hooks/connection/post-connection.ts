@@ -1,7 +1,9 @@
+import db from '@nangohq/database';
 import { connectionService, getProvider } from '@nangohq/shared';
 import { metrics } from '@nangohq/utils';
 
 import * as postConnectionHandlers from './index.js';
+import { DBConnectSession } from '../../services/connectSession.service.js';
 import { getHandler, getInternalNango } from './internal-nango.js';
 
 import type { InternalNango } from './internal-nango.js';
@@ -23,6 +25,13 @@ async function execute(createdConnection: RecentlyCreatedConnection, providerNam
             return;
         }
         const connection = connectionRes.response;
+
+        // Invalidate token after single use
+        await db
+            .knex<DBConnectSession>('connect_sessions')
+            .where('environment_id', environment.id)
+            .andWhereRaw(`end_user::jsonb = ?::jsonb`, [JSON.stringify(createdConnection.endUser)])
+            .delete();
 
         const internalNango = getInternalNango(connection, providerName);
         const provider = getProvider(providerName);
