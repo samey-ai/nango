@@ -33,27 +33,15 @@ jobs:
                   VERSION=$(git describe --tags --dirty --always)
                   echo "VERSION=${VERSION}" >> $GITHUB_OUTPUT
 
-            - name: Azure login
-              uses: azure/login@v2
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@v5.1.0
               with:
-                  client-id: ${{ secrets.AZURE_CLIENT_ID }}
-                  tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-                  subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+                  aws-region: eu-west-2
+                  role-to-assume: ${{ vars.AWS_ECR_ROLE }}
 
-            - name: Get Azure Container Registry Token
-              id: get_token
-              run: |
-                  TOKEN=$(az acr login --name $ACR_NAME --expose-token --query accessToken --output tsv)
-                  echo "TOKEN=${TOKEN}" >> $GITHUB_OUTPUT
-              env:
-                  ACR_NAME: ${{ vars.ACR_NAME }}
-
-            - name: Docker login
-              uses: docker/login-action@v3
-              with:
-                  username: 00000000-0000-0000-0000-000000000000
-                  password: ${{ steps.get_token.outputs.TOKEN }}
-                  registry: ${{ vars.ACR_NAME }}.azurecr.io
+            - name: Login to Amazon ECR
+              id: login-ecr
+              uses: aws-actions/amazon-ecr-login@v2
 
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3
@@ -62,37 +50,25 @@ jobs:
               uses: docker/build-push-action@v6
               with:
                   push: true
-                  tags: ${{ vars.ACR_NAME }}.azurecr.io/nango:${{ steps.get_tags.outputs.VERSION }}-${{ matrix.arch }}
+                  tags: ${{ vars.ECR_NAME }}/nango:${{ steps.get_tags.outputs.VERSION }}-${{ matrix.arch }}
                   platforms: linux/${{ matrix.arch }}
-                  cache-from: type=registry,ref=${{ vars.ACR_NAME }}.azurecr.io/nango:buildcache-${{ matrix.arch }}
-                  cache-to: type=registry,ref=${{ vars.ACR_NAME }}.azurecr.io/nango:buildcache-${{ matrix.arch }},mode=max
+                  cache-from: type=registry,ref=${{ vars.ECR_NAME }}/nango:buildcache-${{ matrix.arch }}
+                  cache-to: type=registry,ref=${{ vars.ECR_NAME }}/nango:buildcache-${{ matrix.arch }},mode=max
 
     merge-manifest:
         needs: build-image
         runs-on: ubuntu-latest
 
         steps:
-            - name: Azure login
-              uses: azure/login@v2
+            - name: Configure AWS Credentials
+              uses: aws-actions/configure-aws-credentials@v5.1.0
               with:
-                  client-id: ${{ secrets.AZURE_CLIENT_ID }}
-                  tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-                  subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+                  aws-region: eu-west-2
+                  role-to-assume: ${{ vars.AWS_ECR_ROLE }}
 
-            - name: Get Azure Container Registry Token
-              id: get_token
-              run: |
-                  TOKEN=$(az acr login --name $ACR_NAME --expose-token --query accessToken --output tsv)
-                  echo "TOKEN=${TOKEN}" >> $GITHUB_OUTPUT
-              env:
-                  ACR_NAME: ${{ vars.ACR_NAME }}
-
-            - name: Docker login
-              uses: docker/login-action@v3
-              with:
-                  username: 00000000-0000-0000-0000-000000000000
-                  password: ${{ steps.get_token.outputs.TOKEN }}
-                  registry: ${{ vars.ACR_NAME }}.azurecr.io
+            - name: Login to Amazon ECR
+              id: login-ecr
+              uses: aws-actions/amazon-ecr-login@v2
 
             - name: Set up Docker Buildx
               uses: docker/setup-buildx-action@v3
@@ -100,7 +76,7 @@ jobs:
             - name: Create multi-arch manifest
               run: |
                   docker buildx imagetools create \
-                    -t ${{ vars.ACR_NAME }}.azurecr.io/nango:${{ needs.build-image.outputs.VERSION }} \
-                    -t ${{ vars.ACR_NAME }}.azurecr.io/nango:latest \
-                    ${{ vars.ACR_NAME }}.azurecr.io/nango:${{ needs.build-image.outputs.VERSION }}-amd64 \
-                    ${{ vars.ACR_NAME }}.azurecr.io/nango:${{ needs.build-image.outputs.VERSION }}-arm64
+                    -t ${{ vars.ECR_NAME }}/nango:${{ needs.build-image.outputs.VERSION }} \
+                    -t ${{ vars.ECR_NAME }}/nango:latest \
+                    ${{ vars.ECR_NAME }}/nango:${{ needs.build-image.outputs.VERSION }}-amd64 \
+                    ${{ vars.ECR_NAME }}/nango:${{ needs.build-image.outputs.VERSION }}-arm64
