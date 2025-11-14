@@ -6658,6 +6658,22 @@ highlevel-white-label:
     webhook_user_defined_secret: true
     docs: https://nango.dev/docs/integrations/all/highlevel-white-label
 
+highlevel-token:
+    display_name: Highlevel (Token)
+    categories:
+      - marketing
+    auth_mode: API_KEY
+    proxy:
+        base_url: https://services.leadconnectorhq.com
+        headers:
+            authorization: Bearer ${apiKey}
+    docs: https://marketplace.gohighlevel.com/docs/Authorization/PrivateIntegrationsToken
+    credentials:
+        apiKey:
+            type: string
+            title: HighLevel Private Integrations Token
+            description: The “Private Integration” token from HighLevel.
+
 holded:
     display_name: Holded
     categories:
