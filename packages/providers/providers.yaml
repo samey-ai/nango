@@ -6668,11 +6668,18 @@ highlevel-token:
         headers:
             authorization: Bearer ${apiKey}
     docs: https://marketplace.gohighlevel.com/docs/Authorization/PrivateIntegrationsToken
+    connection_config:
+      locationId:
+        type: string
+        title: Account location ID
+        description: The location identifier from HighLevel.
+        secret: true
     credentials:
-        apiKey:
-            type: string
-            title: HighLevel Private Integrations Token
-            description: The “Private Integration” token from HighLevel.
+      apiKey:
+        type: string
+        title: Private Integrations Token
+        description: The “Private Integration” token from HighLevel.
+        secret: true
 
 holded:
     display_name: Holded
